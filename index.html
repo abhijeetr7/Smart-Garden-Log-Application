@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Garden Log</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for Inter font and general body */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0fdf4; /* Light green background */
+            color: #166534; /* Dark green text */
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e0f2f7;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #34d399;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #10b981;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 md:p-8 min-h-screen flex flex-col items-center">
+    <!-- Main Application Container -->
+    <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-4xl border-4 border-emerald-300">
+        <h1 class="text-4xl font-extrabold text-center mb-8 text-emerald-700">
+            <span class="inline-block align-middle mr-2">🪴</span> Smart Garden Log
+        </h1>
+
+        <!-- Add Plant Button -->
+        <button id="add-plant-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition duration-300 ease-in-out transform hover:scale-105 mb-8 focus:outline-none focus:ring-4 focus:ring-emerald-300">
+            Add New Plant
+        </button>
+
+        <!-- Plants List Container -->
+        <div id="plants-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Plant cards will be rendered here by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Modals -->
+
+    <!-- Add/Edit Plant Modal -->
+    <div id="plant-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md border-4 border-emerald-300">
+            <h2 id="plant-modal-title" class="text-3xl font-bold mb-6 text-emerald-700 text-center">Add New Plant</h2>
+            <form id="plant-form" class="space-y-5">
+                <div>
+                    <label for="plant-name" class="block text-lg font-medium text-emerald-800 mb-2">Plant Name</label>
+                    <input type="text" id="plant-name" class="w-full p-3 border border-emerald-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 shadow-sm" required>
+                </div>
+                <div>
+                    <label for="sunlight-needs" class="block text-lg font-medium text-emerald-800 mb-2">Sunlight Needs</label>
+                    <select id="sunlight-needs" class="w-full p-3 border border-emerald-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 shadow-sm" required>
+                        <option value="">Select...</option>
+                        <option value="Full Sun">Full Sun (6+ hours direct)</option>
+                        <option value="Partial Sun">Partial Sun (4-6 hours direct)</option>
+                        <option value="Partial Shade">Partial Shade (2-4 hours direct)</option>
+                        <option value="Full Shade">Full Shade (Less than 2 hours direct)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="watering-frequency" class="block text-lg font-medium text-emerald-800 mb-2">Watering Frequency (days)</label>
+                    <input type="number" id="watering-frequency" class="w-full p-3 border border-emerald-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 shadow-sm" min="1" required>
+                </div>
+                <div>
+                    <label for="fertilizing-frequency" class="block text-lg font-medium text-emerald-800 mb-2">Fertilizing Frequency (days)</label>
+                    <input type="number" id="fertilizing-frequency" class="w-full p-3 border border-emerald-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 shadow-sm" min="0" value="0">
+                    <p class="text-sm text-gray-500 mt-1">Set to 0 if not applicable.</p>
+                </div>
+                <div class="flex justify-end space-x-4 mt-6">
+                    <button type="button" id="cancel-plant-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-5 rounded-xl transition duration-300 ease-in-out focus:outline-none focus:ring-4 focus:ring-gray-200">Cancel</button>
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-5 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-emerald-300">Save Plant</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Growth Log Modal -->
+    <div id="growth-log-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md border-4 border-emerald-300">
+            <h2 class="text-3xl font-bold mb-6 text-emerald-700 text-center">Add Growth Log</h2>
+            <form id="growth-log-form" class="space-y-5">
+                <div>
+                    <label for="growth-notes" class="block text-lg font-medium text-emerald-800 mb-2">Notes</label>
+                    <textarea id="growth-notes" class="w-full p-3 border border-emerald-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 shadow-sm" rows="4"></textarea>
+                </div>
+                <div>
+                    <label for="growth-photo" class="block text-lg font-medium text-emerald-800 mb-2">Upload Photo</label>
+                    <input type="file" id="growth-photo" accept="image/*" class="w-full p-3 border border-emerald-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 shadow-sm">
+                    <p class="text-sm text-gray-500 mt-1">Optional: Upload a photo to track growth.</p>
+                </div>
+                <div class="flex justify-end space-x-4 mt-6">
+                    <button type="button" id="cancel-growth-log-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-5 rounded-xl transition duration-300 ease-in-out focus:outline-none focus:ring-4 focus:ring-gray-200">Cancel</button>
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-5 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-emerald-300">Save Log</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Growth History Modal -->
+    <div id="growth-history-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-2xl border-4 border-emerald-300 max-h-[90vh] overflow-y-auto">
+            <h2 id="growth-history-title" class="text-3xl font-bold mb-6 text-emerald-700 text-center">Growth History for [Plant Name]</h2>
+            <div id="growth-history-content" class="space-y-6">
+                <!-- Growth logs will be displayed here -->
+            </div>
+            <div class="flex justify-end mt-8">
+                <button type="button" id="close-growth-history-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-5 rounded-xl transition duration-300 ease-in-out focus:outline-none focus:ring-4 focus:ring-gray-200">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Box Modal (replaces alert()) -->
+    <div id="message-box-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-xs text-center border-2 border-emerald-400">
+            <p id="message-box-text" class="text-lg font-semibold text-emerald-800 mb-4"></p>
+            <button id="message-box-ok-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out">OK</button>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal (replaces confirm()) -->
+    <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-sm text-center border-2 border-emerald-400">
+            <p id="confirm-box-text" class="text-lg font-semibold text-emerald-800 mb-6"></p>
+            <div class="flex justify-center space-x-4">
+                <button id="confirm-box-cancel-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out">Cancel</button>
+                <button id="confirm-box-ok-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Initialization and Authentication ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+
+        let app, db, auth, userId;
+        let isAuthReady = false; // Flag to indicate if authentication is ready
+
+        // Global state object
+        let appState = {
+            plants: []
+        };
+
+        // Initialize Firebase and set up authentication listener
+        const initFirebase = async () => {
+            console.log("Initializing Firebase...");
+            console.log("App ID:", appId);
+            console.log("Firebase Config:", firebaseConfig); // Log config for debugging
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        console.log("Authenticated user ID:", userId);
+                    } else {
+                        // Sign in anonymously if no user is found and no custom token is provided
+                        try {
+                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                                await signInWithCustomToken(auth, __initial_auth_token);
+                                userId = auth.currentUser.uid;
+                                console.log("Signed in with custom token. User ID:", userId);
+                            } else {
+                                await signInAnonymously(auth);
+                                userId = auth.currentUser.uid;
+                                console.log("Signed in anonymously. User ID:", userId);
+                            }
+                        } catch (error) {
+                            console.error("Firebase authentication error:", error);
+                            showMessage("Authentication failed. Please try again.", "error");
+                        }
+                    }
+                    isAuthReady = true;
+                    console.log("Authentication ready. Attempting to set up Firestore listeners.");
+                    // Once auth is ready, set up Firestore listeners
+                    setupFirestoreListeners();
+                });
+            } catch (error) {
+                console.error("Firebase initialization error:", error);
+                showMessage("Failed to initialize Firebase. Please check your configuration. Error: " + error.message, "error");
+            }
+        };
+
+        // --- DOM Elements ---
+        const addPlantBtn = document.getElementById('add-plant-btn');
+        const plantsList = document.getElementById('plants-list');
+
+        // Plant Modal elements
+        const plantModal = document.getElementById('plant-modal');
+        const plantModalTitle = document.getElementById('plant-modal-title');
+        const plantForm = document.getElementById('plant-form');
+        const plantNameInput = document.getElementById('plant-name');
+        const sunlightNeedsInput = document.getElementById('sunlight-needs');
+        const wateringFrequencyInput = document.getElementById('watering-frequency');
+        const fertilizingFrequencyInput = document.getElementById('fertilizing-frequency');
+        const cancelPlantBtn = document.getElementById('cancel-plant-btn');
+
+        // Growth Log Modal elements
+        const growthLogModal = document.getElementById('growth-log-modal');
+        const growthLogForm = document.getElementById('growth-log-form');
+        const growthNotesInput = document.getElementById('growth-notes');
+        const growthPhotoInput = document.getElementById('growth-photo');
+        const cancelGrowthLogBtn = document.getElementById('cancel-growth-log-btn');
+
+        // Growth History Modal elements
+        const growthHistoryModal = document.getElementById('growth-history-modal');
+        const growthHistoryTitle = document.getElementById('growth-history-title');
+        const growthHistoryContent = document.getElementById('growth-history-content');
+        const closeGrowthHistoryBtn = document.getElementById('close-growth-history-btn');
+
+        // Message Box Modal elements
+        const messageBoxModal = document.getElementById('message-box-modal');
+        const messageBoxText = document.getElementById('message-box-text');
+        const messageBoxOkBtn = document.getElementById('message-box-ok-btn');
+
+        // Confirmation Modal elements
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmBoxText = document.getElementById('confirm-box-text');
+        const confirmBoxOkBtn = document.getElementById('confirm-box-ok-btn');
+        const confirmBoxCancelBtn = document.getElementById('confirm-box-cancel-btn');
+        let confirmResolve = null; // To store the resolve function for the promise
+
+        // --- Global State ---
+        // Removed `let plants = [];` as it's now part of `appState`
+        let currentPlantId = null; // Used for editing or adding growth logs to a specific plant
+
+        // --- Utility Functions ---
+
+        /**
+         * Displays a custom message box instead of alert().
+         * @param {string} message - The message to display.
+         * @param {string} type - 'success' or 'error' (optional, for styling if needed).
+         */
+        function showMessage(message, type = 'info') {
+            messageBoxText.textContent = message;
+            // Optionally add styling based on type
+            if (type === 'error') {
+                messageBoxText.classList.add('text-red-600');
+                messageBoxText.classList.remove('text-emerald-800');
+            } else {
+                messageBoxText.classList.add('text-emerald-800');
+                messageBoxText.classList.remove('text-red-600');
+            }
+            messageBoxModal.classList.remove('hidden');
+        }
+
+        /**
+         * Displays a custom confirmation box instead of confirm().
+         * @param {string} message - The message to display.
+         * @returns {Promise<boolean>} A promise that resolves to true if confirmed, false otherwise.
+         */
+        function showConfirm(message) {
+            confirmBoxText.textContent = message;
+            confirmModal.classList.remove('hidden');
+
+            return new Promise(resolve => {
+                confirmResolve = resolve;
+            });
+        }
+
+        /**
+         * Hides a given modal.
+         * @param {HTMLElement} modalElement - The modal element to hide.
+         */
+        function closeModal(modalElement) {
+            modalElement.classList.add('hidden');
+        }
+
+        /**
+         * Calculates the next due date for an action (watering/fertilizing).
+         * @param {string} lastActionDateString - The date of the last action in ISO-MM-DD format.
+         * @param {number} frequencyDays - The frequency in days.
+         * @returns {string} The next due date in ISO-MM-DD format, or 'N/A' if frequency is 0.
+         */
+        function calculateNextAction(lastActionDateString, frequencyDays) {
+            if (!lastActionDateString || frequencyDays === 0) {
+                return 'N/A';
+            }
+            const lastDate = new Date(lastActionDateString);
+            lastDate.setDate(lastDate.getDate() + frequencyDays);
+            return lastDate.toISOString().split('T')[0];
+        }
+
+        /**
+         * Formats a date string into a more readable format.
+         * @param {string} dateString - The date string (e.g., ISO-MM-DD).
+         * @returns {string} Formatted date (e.g., Jan 1, 2023).
+         */
+        function formatDate(dateString) {
+            if (!dateString || dateString === 'N/A') return 'N/A';
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString(undefined, options);
+        }
+
+        // --- Plant Management Functions ---
+
+        /**
+         * Opens the plant modal for adding a new plant or editing an existing one.
+         * @param {string|null} plantId - The ID of the plant to edit, or null for a new plant.
+         */
+        function openPlantModal(plantId = null) {
+            currentPlantId = plantId;
+            plantForm.reset(); // Clear form
+            if (plantId) {
+                plantModalTitle.textContent = 'Edit Plant';
+                const plantToEdit = appState.plants.find(p => p.id === plantId);
+                if (plantToEdit) {
+                    plantNameInput.value = plantToEdit.name;
+                    sunlightNeedsInput.value = plantToEdit.sunlightNeeds;
+                    wateringFrequencyInput.value = plantToEdit.wateringFrequency;
+                    fertilizingFrequencyInput.value = plantToEdit.fertilizingFrequency || 0;
+                }
+            } else {
+                plantModalTitle.textContent = 'Add New Plant';
+            }
+            plantModal.classList.remove('hidden');
+        }
+
+        /**
+         * Handles saving a new plant or updating an existing one to Firestore.
+         * @param {Event} event - The form submission event.
+         */
+        async function savePlant(event) {
+            event.preventDefault();
+
+            if (!isAuthReady || !userId) {
+                showMessage("Authentication not ready. Please wait a moment.", "error");
+                return;
+            }
+
+            const plantData = {
+                name: plantNameInput.value.trim(),
+                sunlightNeeds: sunlightNeedsInput.value,
+                wateringFrequency: parseInt(wateringFrequencyInput.value, 10),
+                fertilizingFrequency: parseInt(fertilizingFrequencyInput.value, 10) || 0,
+                lastWatered: currentPlantId ? appState.plants.find(p => p.id === currentPlantId)?.lastWatered || null : null,
+                lastFertilized: currentPlantId ? appState.plants.find(p => p.id === currentPlantId)?.lastFertilized || null : null,
+                createdAt: currentPlantId ? appState.plants.find(p => p.id === currentPlantId)?.createdAt || new Date().toISOString() : new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            try {
+                const plantsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/plants`);
+                if (currentPlantId) {
+                    // Update existing plant
+                    await setDoc(doc(plantsCollectionRef, currentPlantId), plantData);
+                    showMessage("Plant updated successfully!");
+                } else {
+                    // Add new plant
+                    plantData.lastWatered = null; // New plants start with no last watered date
+                    plantData.lastFertilized = null; // New plants start with no last fertilized date
+                    await addDoc(plantsCollectionRef, plantData);
+                    showMessage("Plant added successfully!");
+                }
+                closeModal(plantModal);
+            } catch (error) {
+                console.error("Error saving plant:", error);
+                showMessage("Failed to save plant. Please try again.", "error");
+            }
+        }
+
+        /**
+         * Deletes a plant from Firestore.
+         * @param {string} plantId - The ID of the plant to delete.
+         */
+        async function deletePlant(plantId) {
+            if (!isAuthReady || !userId) {
+                showMessage("Authentication not ready. Please wait a moment.", "error");
+                return;
+            }
+
+            const confirmed = await showConfirm("Are you sure you want to delete this plant and all its growth logs?");
+            if (!confirmed) {
+                return; // User cancelled
+            }
+
+            try {
+                // Delete growth logs subcollection first
+                const growthLogsRef = collection(db, `artifacts/${appId}/users/${userId}/plants/${plantId}/growthLogs`);
+                const snapshot = await getDocs(growthLogsRef);
+                const deletePromises = [];
+                snapshot.forEach(docSnapshot => {
+                    deletePromises.push(deleteDoc(doc(growthLogsRef, docSnapshot.id)));
+                });
+                await Promise.all(deletePromises);
+
+                // Then delete the plant document
+                await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/plants`, plantId));
+                showMessage("Plant deleted successfully!");
+            } catch (error) {
+                console.error("Error deleting plant:", error);
+                showMessage("Failed to delete plant. Please try again.", "error");
+            }
+        }
+
+        /**
+         * Logs a watering event for a plant.
+         * @param {string} plantId - The ID of the plant.
+         */
+        async function logWatering(plantId) {
+            if (!isAuthReady || !userId) {
+                showMessage("Authentication not ready. Please wait a moment.", "error");
+                return;
+            }
+            try {
+                const plantRef = doc(db, `artifacts/${appId}/users/${userId}/plants`, plantId);
+                await updateDoc(plantRef, {
+                    lastWatered: new Date().toISOString().split('T')[0] // Store as ISO-MM-DD
+                });
+                showMessage("Watering logged!");
+            } catch (error) {
+                console.error("Error logging watering:", error);
+                showMessage("Failed to log watering. Please try again.", "error");
+            }
+        }
+
+        /**
+         * Logs a fertilizing event for a plant.
+         * @param {string} plantId - The ID of the plant.
+         */
+        async function logFertilizing(plantId) {
+            if (!isAuthReady || !userId) {
+                showMessage("Authentication not ready. Please wait a moment.", "error");
+                return;
+            }
+            try {
+                const plantRef = doc(db, `artifacts/${appId}/users/${userId}/plants`, plantId);
+                await updateDoc(plantRef, {
+                    lastFertilized: new Date().toISOString().split('T')[0] // Store as ISO-MM-DD
+                });
+                showMessage("Fertilizing logged!");
+            } catch (error) {
+                console.error("Error logging fertilizing:", error);
+                showMessage("Failed to log fertilizing. Please try again.", "error");
+            }
+        }
+
+        // --- Growth Log Functions ---
+
+        /**
+         * Opens the growth log modal for a specific plant.
+         * @param {string} plantId - The ID of the plant.
+         */
+        function openGrowthLogModal(plantId) {
+            currentPlantId = plantId;
+            growthLogForm.reset();
+            growthLogModal.classList.remove('hidden');
+        }
+
+        /**
+         * Handles saving a growth log and photo to Firestore for the current plant.
+         * @param {Event} event - The form submission event.
+         */
+        async function saveGrowthLog(event) {
+            event.preventDefault();
+
+            if (!isAuthReady || !userId) {
+                showMessage("Authentication not ready. Please wait a moment.", "error");
+                return;
+            }
+            if (!currentPlantId) {
+                showMessage("No plant selected for growth log.", "error");
+                return;
+            }
+
+            const notes = growthNotesInput.value.trim();
+            const photoFile = growthPhotoInput.files[0];
+            let photoDataUrl = null;
+
+            if (photoFile) {
+                try {
+                    photoDataUrl = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(photoFile);
+                    });
+                } catch (error) {
+                    console.error("Error reading file:", error);
+                    showMessage("Failed to read image file. Please try another.", "error");
+                    return;
+                }
+            }
+
+            const growthLogData = {
+                notes: notes,
+                photo: photoDataUrl, // Store Data URL
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                const growthLogsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/plants/${currentPlantId}/growthLogs`);
+                await addDoc(growthLogsCollectionRef, growthLogData);
+                showMessage("Growth log saved successfully!");
+                closeModal(growthLogModal);
+            } catch (error) {
+                console.error("Error saving growth log:", error);
+                showMessage("Failed to save growth log. Please try again.", "error");
+            }
+        }
+
+        /**
+         * Opens the growth history modal and displays logs for a specific plant.
+         * @param {string} plantId - The ID of the plant.
+         * @param {string} plantName - The name of the plant.
+         */
+        async function viewGrowthHistory(plantId, plantName) {
+            if (!isAuthReady || !userId) {
+                showMessage("Authentication not ready. Please wait a moment.", "error");
+                return;
+            }
+            currentPlantId = plantId;
+            growthHistoryTitle.textContent = `Growth History for ${plantName}`;
+            growthHistoryContent.innerHTML = '<p class="text-center text-gray-500">Loading growth logs...</p>';
+            growthHistoryModal.classList.remove('hidden');
+
+            try {
+                const growthLogsRef = collection(db, `artifacts/${appId}/users/${userId}/plants/${plantId}/growthLogs`);
+                // Note: Firestore orderBy() is avoided as per instructions. Sorting will be done in memory.
+                const querySnapshot = await getDocs(growthLogsRef);
+                let logs = [];
+                querySnapshot.forEach(doc => {
+                    logs.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Sort logs by timestamp in descending order (newest first)
+                logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                growthHistoryContent.innerHTML = ''; // Clear loading message
+
+                if (logs.length === 0) {
+                    growthHistoryContent.innerHTML = '<p class="text-center text-gray-500">No growth logs found for this plant.</p>';
+                } else {
+                    logs.forEach(log => {
+                        const logElement = document.createElement('div');
+                        logElement.className = 'bg-emerald-50 p-4 rounded-xl shadow-sm border border-emerald-200';
+                        logElement.innerHTML = `
+                            <p class="text-sm text-gray-600 mb-2">${formatDate(log.timestamp)}</p>
+                            ${log.notes ? `<p class="text-emerald-800 mb-2">${log.notes}</p>` : ''}
+                            ${log.photo ? `<img src="${log.photo}" alt="Growth photo" class="w-full h-48 object-cover rounded-lg mt-2 shadow-md">` : ''}
+                        `;
+                        growthHistoryContent.appendChild(logElement);
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching growth logs:", error);
+                growthHistoryContent.innerHTML = '<p class="text-center text-red-500">Failed to load growth history.</p>';
+                showMessage("Failed to load growth history. Please try again.", "error");
+            }
+        }
+
+        // --- Rendering Function ---
+
+        /**
+         * Renders all plants to the UI.
+         */
+        function renderPlants() {
+            plantsList.innerHTML = ''; // Clear existing plants
+
+            if (appState.plants.length === 0) {
+                plantsList.innerHTML = '<p class="col-span-full text-center text-gray-500 text-xl py-8">No plants added yet. Click "Add New Plant" to get started!</p>';
+                return;
+            }
+
+            const today = new Date().toISOString().split('T')[0]; // Current date ISO-MM-DD
+
+            appState.plants.forEach(plant => {
+                const nextWatering = calculateNextAction(plant.lastWatered, plant.wateringFrequency);
+                const nextFertilizing = calculateNextAction(plant.lastFertilized, plant.fertilizingFrequency);
+
+                const isWateringDue = nextWatering !== 'N/A' && nextWatering <= today;
+                const isFertilizingDue = nextFertilizing !== 'N/A' && nextFertilizing <= today;
+
+                const plantCard = document.createElement('div');
+                plantCard.className = `bg-emerald-100 p-5 rounded-2xl shadow-lg border-2 ${isWateringDue || isFertilizingDue ? 'border-red-400 animate-pulse' : 'border-emerald-300'} flex flex-col justify-between`;
+                plantCard.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="text-2xl font-bold text-emerald-800">${plant.name}</h3>
+                        <div class="flex space-x-2">
+                            <button data-id="${plant.id}" class="edit-plant-btn text-emerald-600 hover:text-emerald-800 transition duration-200">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </button>
+                            <button data-id="${plant.id}" class="delete-plant-btn text-red-600 hover:text-red-800 transition duration-200">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 text-emerald-700 mb-4">
+                        <p><strong class="font-semibold">Sunlight:</strong> ${plant.sunlightNeeds}</p>
+                        <p><strong class="font-semibold">Watering Freq:</strong> Every ${plant.wateringFrequency} days</p>
+                        <p><strong class="font-semibold">Last Watered:</strong> ${formatDate(plant.lastWatered) || 'Never'}</p>
+                        <p class="${isWateringDue ? 'text-red-600 font-bold' : ''}"><strong class="font-semibold">Next Water:</strong> ${formatDate(nextWatering)}</p>
+                        ${plant.fertilizingFrequency > 0 ? `
+                            <p><strong class="font-semibold">Fertilizing Freq:</strong> Every ${plant.fertilizingFrequency} days</p>
+                            <p><strong class="font-semibold">Last Fertilized:</strong> ${formatDate(plant.lastFertilized) || 'Never'}</p>
+                            <p class="${isFertilizingDue ? 'text-red-600 font-bold' : ''}"><strong class="font-semibold">Next Fertilize:</strong> ${formatDate(nextFertilizing)}</p>
+                        ` : ''}
+                    </div>
+
+                    <div class="flex flex-wrap gap-3 mt-auto">
+                        <button data-id="${plant.id}" class="log-water-btn flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-2 px-3 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                            💧 Log Water
+                        </button>
+                        ${plant.fertilizingFrequency > 0 ? `
+                            <button data-id="${plant.id}" class="log-fertilize-btn flex-1 bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-bold py-2 px-3 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-yellow-300">
+                                🧪 Log Fertilize
+                            </button>
+                        ` : ''}
+                        <button data-id="${plant.id}" class="add-growth-log-btn flex-1 bg-purple-500 hover:bg-purple-600 text-white text-sm font-bold py-2 px-3 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-300">
+                            📈 Add Growth Log
+                        </button>
+                        <button data-id="${plant.id}" data-name="${plant.name}" class="view-growth-history-btn flex-1 bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-2 px-3 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300">
+                            📚 View History
+                        </button>
+                    </div>
+                `;
+                plantsList.appendChild(plantCard);
+            });
+
+            // Attach event listeners to newly rendered buttons
+            document.querySelectorAll('.edit-plant-btn').forEach(button => {
+                button.onclick = (e) => openPlantModal(e.currentTarget.dataset.id);
+            });
+            document.querySelectorAll('.delete-plant-btn').forEach(button => {
+                button.onclick = (e) => deletePlant(e.currentTarget.dataset.id);
+            });
+            document.querySelectorAll('.log-water-btn').forEach(button => {
+                button.onclick = (e) => logWatering(e.currentTarget.dataset.id);
+            });
+            document.querySelectorAll('.log-fertilize-btn').forEach(button => {
+                button.onclick = (e) => logFertilizing(e.currentTarget.dataset.id);
+            });
+            document.querySelectorAll('.add-growth-log-btn').forEach(button => {
+                button.onclick = (e) => openGrowthLogModal(e.currentTarget.dataset.id);
+            });
+            document.querySelectorAll('.view-growth-history-btn').forEach(button => {
+                button.onclick = (e) => viewGrowthHistory(e.currentTarget.dataset.id, e.currentTarget.dataset.name);
+            });
+        }
+
+        // --- Firestore Real-time Listener Setup ---
+        function setupFirestoreListeners() {
+            if (!isAuthReady || !userId) {
+                console.warn("Firestore listeners not set up: Authentication not ready or userId is null.");
+                return;
+            }
+
+            const plantsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/plants`);
+            onSnapshot(plantsCollectionRef, (snapshot) => {
+                console.log("Firestore snapshot received for plants.");
+                appState.plants = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderPlants();
+            }, (error) => {
+                console.error("Error fetching plants:", error);
+                showMessage("Failed to load plants. Please refresh the page.", "error");
+            });
+        }
+
+        // --- Event Listeners ---
+        addPlantBtn.addEventListener('click', () => openPlantModal());
+        cancelPlantBtn.addEventListener('click', () => closeModal(plantModal));
+        plantForm.addEventListener('submit', savePlant);
+
+        cancelGrowthLogBtn.addEventListener('click', () => closeModal(growthLogModal));
+        growthLogForm.addEventListener('submit', saveGrowthLog);
+
+        closeGrowthHistoryBtn.addEventListener('click', () => closeModal(growthHistoryModal));
+
+        messageBoxOkBtn.addEventListener('click', () => closeModal(messageBoxModal));
+
+        // Event listeners for the new confirmation modal
+        confirmBoxOkBtn.addEventListener('click', () => {
+            if (confirmResolve) {
+                confirmResolve(true);
+                closeModal(confirmModal);
+            }
+        });
+        confirmBoxCancelBtn.addEventListener('click', () => {
+            if (confirmResolve) {
+                confirmResolve(false);
+                closeModal(confirmModal);
+            }
+        });
+
+        // Initialize Firebase on window load
+        window.onload = initFirebase;
+    </script>
+</body>
+</html>
